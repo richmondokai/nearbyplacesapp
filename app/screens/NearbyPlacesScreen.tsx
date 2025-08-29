@@ -25,12 +25,16 @@ export const NearbyPlacesScreen: React.FC = () => {
     useDefaultLocation,
     toggleUseDefaultLocation,
     clearPermissionStatus,
-    checkCurrentPermissionStatus
+    checkCurrentPermissionStatus,
+    getCurrentLocation,
+    setLoading
   } = useLocationStore();
 
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<SupportedPlaceType | 'all'>('all');
   const [filteredPlacesForMap, setFilteredPlacesForMap] = useState<Place[]>([]);
+  const [hasAttemptedLocationAccess, setHasAttemptedLocationAccess] = useState(false);
+  const [wasLocationPreviouslyGranted, setWasLocationPreviouslyGranted] = useState(false);
   const mapRef = useRef<any>(null);
 
   useEffect(() => {
@@ -38,10 +42,18 @@ export const NearbyPlacesScreen: React.FC = () => {
     // This ensures we get fresh permission state on every app launch
     const checkPermission = async () => {
       try {
-        // First clear any stored permission status to force fresh check
+        // Check current permission status BEFORE clearing it
+        await checkCurrentPermissionStatus();
+        
+        // Check if location was previously granted
+        if (permissionStatus?.status === 'granted') {
+          setWasLocationPreviouslyGranted(true);
+        }
+        
+        // Now clear the stored permission status to force fresh check
         clearPermissionStatus();
         
-        // Then check current permission status without requesting
+        // Check permission status again after clearing
         await checkCurrentPermissionStatus();
         
         // If permission is not granted, then request it
@@ -193,10 +205,57 @@ export const NearbyPlacesScreen: React.FC = () => {
     console.log('NearbyPlacesScreen: User made permission choice, hiding permission UI');
   };
 
+  const handleRequestLocationAccess = async () => {
+    try {
+      console.log('User requested location access from map screen');
+      
+      // Mark that user has attempted location access (button will disappear forever)
+      setHasAttemptedLocationAccess(true);
+      
+      setLoading(true);
+      
+      // Request location permission
+      await requestLocationPermission();
+      
+      // Check permission status again after request
+      await checkCurrentPermissionStatus();
+      
+      // Get the updated permission status from store
+      const updatedPermissionStatus = useLocationStore.getState().permissionStatus;
+      
+      // If permission granted, get current location and start watching
+      if (updatedPermissionStatus?.status === 'granted') {
+        console.log('Permission granted, switching to live location');
+        await getCurrentLocation();
+        startLocationWatching();
+        // Switch from default to live location - this will hide the button
+        await toggleUseDefaultLocation();
+      } else {
+        console.log('Permission still not granted:', updatedPermissionStatus?.status);
+        // Button is already hidden because hasAttemptedLocationAccess is now true
+      }
+    } catch (error) {
+      console.error('Error requesting location access:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Show location permission component if permission not granted or user hasn't made a choice
+  // BUT allow users to proceed if they chose default location
   if (!permissionStatus || 
-      permissionStatus.status !== 'granted' || 
+      (permissionStatus.status !== 'granted' && !useDefaultLocation) || 
       (!currentLocation && !useDefaultLocation)) {
+    
+    console.log('Showing LocationPermissionComponent because:', {
+      noPermissionStatus: !permissionStatus,
+      permissionNotGranted: permissionStatus?.status !== 'granted',
+      noLocationAndNoDefault: !currentLocation && !useDefaultLocation,
+      permissionStatus: permissionStatus?.status,
+      currentLocation: !!currentLocation,
+      useDefaultLocation
+    });
+    
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -218,6 +277,13 @@ export const NearbyPlacesScreen: React.FC = () => {
   }
 
   // Show main app content
+  console.log('Proceeding to main app content with:', {
+    permissionStatus: permissionStatus?.status,
+    currentLocation: !!currentLocation,
+    useDefaultLocation,
+    nearbyPlacesCount: nearbyPlaces.length
+  });
+  
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -260,6 +326,24 @@ export const NearbyPlacesScreen: React.FC = () => {
           </TouchableOpacity>
         </>
       )}
+
+      {/* Allow Location Button - Show when using default location AND user hasn't attempted location access yet AND location wasn't previously granted */}
+      {useDefaultLocation && !hasAttemptedLocationAccess && !wasLocationPreviouslyGranted && (
+        <TouchableOpacity 
+          onPress={handleRequestLocationAccess}
+          style={[
+            styles.allowLocationButton,
+            isLoading && styles.allowLocationButtonDisabled
+          ]}
+          disabled={isLoading}
+        >
+          <Text style={styles.allowLocationButtonText}>
+            {isLoading ? '🔄' : '📍 Allow Location'}
+          </Text>
+        </TouchableOpacity>
+      )}
+      
+
 
       {/* Error Banner */}
       {error && (
@@ -397,5 +481,38 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '600',
+  },
+  allowLocationButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 1000,
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    minWidth: 120,
+    // Add subtle pulsing effect
+    transform: [{ scale: 1.02 }],
+  },
+  allowLocationButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  allowLocationButtonDisabled: {
+    backgroundColor: '#999999',
+    opacity: 0.7,
   },
 });

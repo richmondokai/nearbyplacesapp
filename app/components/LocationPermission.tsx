@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Card, Button } from './index';
 import { useLocationStore } from '../store/locationStore';
@@ -20,6 +20,13 @@ export const LocationPermissionComponent: React.FC<{
   } = useLocationStore();
 
   const [hasMadeChoice, setHasMadeChoice] = useState(false);
+
+  // Monitor store state changes to ensure proper synchronization
+  useEffect(() => {
+    if (useDefaultLocation && hasMadeChoice) {
+      console.log('Store state updated: useDefaultLocation is true, component should hide');
+    }
+  }, [useDefaultLocation, hasMadeChoice]);
 
   const handleRequestPermission = async () => {
     try {
@@ -52,8 +59,10 @@ export const LocationPermissionComponent: React.FC<{
   };
 
   const handleUseDefaultLocation = () => {
+    console.log('User chose to use default location');
     setUseDefaultLocation(true);
     setHasMadeChoice(true);
+    // Call the callback to notify parent component
     onPermissionChoice?.();
   };
 

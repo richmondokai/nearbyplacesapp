@@ -75,7 +75,7 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
       const isUsingDefaultLocation = Math.abs(currentLocation.latitude - defaultLocation.latitude) < 0.001 && 
                                    Math.abs(currentLocation.longitude - defaultLocation.longitude) < 0.001;
       if (!isUsingDefaultLocation) {
-        console.warn('Location mismatch detected! Correcting to default location');
+        // Suppressed: Location mismatch detected! Correcting to default location
         set({ currentLocation: defaultLocation });
         return defaultLocation;
       }
@@ -285,9 +285,11 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
   },
 
   setUseDefaultLocation: (useDefault: boolean) => {
+    console.log(`setUseDefaultLocation called with: ${useDefault}`);
     set({ useDefaultLocation: useDefault });
     if (useDefault) {
       const defaultLocation = locationService.getDefaultLocation();
+      console.log(`Setting currentLocation to default: ${defaultLocation.latitude}, ${defaultLocation.longitude}`);
       set({ currentLocation: defaultLocation });
       // Immediately fetch places from ALL categories for the default location
       // This ensures all places are visible on map and populated in All Places tab
