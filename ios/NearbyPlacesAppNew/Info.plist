@@ -56,6 +56,6 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 	<key>GMSApiKey</key>
-	<string>AIzaSyA5EwWICbPAzb8c6FX1N0BoSvpZrscC-Nw</string>
+	<string>$(GOOGLE_MAPS_API_KEY)</string>
 </dict>
 </plist>
