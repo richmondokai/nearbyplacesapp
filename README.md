@@ -70,6 +70,22 @@ app/
 └── utils/               # Utility functions
 ```
 
+## 🔐 Environment Configuration
+
+### Required API Keys
+This app requires the following API keys to function properly:
+
+- **Google Maps API Key**: For map display and location services
+  - Get your key from [Google Cloud Console](https://console.cloud.google.com/)
+  - Enable Maps SDK for Android and Maps SDK for iOS
+  - Set up billing and API restrictions for security
+
+### Setting Up Environment Variables
+1. Copy the example environment file: `cp env.example .env`
+2. Edit `.env` and add your actual API keys
+3. Never commit the `.env` file to version control
+4. For production builds, configure the keys in your build system
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -94,7 +110,16 @@ app/
    yarn install
    ```
 
-3. **iOS Setup** (macOS only)
+3. **Environment Setup**
+   ```bash
+   # Copy the example environment file
+   cp env.example .env
+   
+   # Edit .env and add your Google Maps API key
+   # GOOGLE_MAPS_API_KEY=your_actual_api_key_here
+   ```
+
+4. **iOS Setup** (macOS only)
    ```bash
    cd ios
    pod install

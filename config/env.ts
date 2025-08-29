@@ -4,8 +4,8 @@ export const ENV = {
   // Nearby Places API Server (Mock API)
   NEARBY_PLACES_API_BASE_URL: 'https://nbp-production.up.railway.app',
   
-  // Google Maps API Key (still needed for map display)
-  GOOGLE_MAPS_API_KEY: 'AIzaSyA5EwWICbPAzb8c6FX1N0BoSvpZrscC-Nw',
+  // Google Maps API Key - Load from environment variable
+  GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_HERE',
   
   // Default location (San Francisco)
   DEFAULT_LOCATION: {
